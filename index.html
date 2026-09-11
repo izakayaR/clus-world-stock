@@ -1,0 +1,2732 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clus World Stock</title>
+
+    <!-- リンク共有時のサムネイル表示用（OGP / Twitter Card） -->
+    <meta property="og:title" content="Clus World Stock">
+    <meta property="og:description" content="clusterで見つけたお気に入りのワールドやイベントを保存・整理できるツールです。">
+    <meta property="og:image" content="https://raw.githubusercontent.com/izakayaR/cluster-world-messenger/main/thumbnail.jpg">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://github.com/izakayaR/cluster-world-messenger">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Clus World Stock">
+    <meta name="twitter:description" content="clusterで見つけたお気に入りのワールドやイベントを保存・整理できるツールです。">
+    <meta name="twitter:image" content="https://raw.githubusercontent.com/izakayaR/cluster-world-messenger/main/thumbnail.jpg">
+    <link rel="icon" href="https://raw.githubusercontent.com/izakayaR/cluster-world-messenger/main/thumbnail.jpg">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/izakayaR/cluster-world-messenger/main/thumbnail.jpg">
+    <style>
+        :root {
+            --bg-color: #13141c;
+            --surface-color: #1c1e2b;
+            --surface-hover: #26293a;
+            --primary: #6c5ce7;
+            --primary-hover: #5b4bc4;
+            --accent: #00cec9;
+            --text-main: #f5f6fa;
+            --text-muted: #a4b0be;
+            --border: #2f3542;
+            --danger: #ff4757;
+            --info: #0984e3;
+            --sidebar-width: 260px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        aside {
+            width: var(--sidebar-width);
+            background-color: var(--surface-color);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-header-btn {
+            display: block;
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .sidebar-header h1 {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .sidebar-header-btn:hover h1 {
+            color: var(--primary);
+        }
+
+        .sidebar-header h1 span {
+            color: var(--primary);
+        }
+
+        .beta-badge {
+            color: #ffffff !important;
+            font-size: 0.5em;
+            font-weight: 700;
+            margin-left: 2px;
+            vertical-align: super;
+            letter-spacing: 0.3px;
+            opacity: 0.85;
+        }
+
+        .folder-bar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .folder-bar-actions {
+            display: none;
+        }
+
+        .folder-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .folder-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .folder-item:hover {
+            background-color: var(--surface-hover);
+            color: var(--text-main);
+        }
+
+        .folder-item.active {
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+
+        .folder-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .folder-count {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+
+        .folder-item.active .folder-count {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .folder-item-right {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .folder-name-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .folder-action-btn {
+            background: none;
+            border: none;
+            color: inherit;
+            opacity: 0.65;
+            cursor: pointer;
+            padding: 3px;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .folder-action-btn:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .folder-action-btn.delete:hover {
+            color: var(--danger);
+        }
+
+        .folder-item.active .folder-action-btn:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-footer {
+            padding: 15px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Main Section */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        header.top-bar {
+            padding: 15px 30px;
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .search-box {
+            position: relative;
+            width: 350px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px 10px 38px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+        }
+
+        .search-box svg {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            fill: var(--text-muted);
+            width: 16px;
+            height: 16px;
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Desktop "バックアップ" dropdown */
+        .backup-dropdown {
+            position: relative;
+        }
+
+        .backup-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background-color: var(--surface-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            min-width: 190px;
+            padding: 6px;
+            z-index: 1500;
+        }
+
+        .backup-menu.active {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .backup-menu button {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            text-align: left;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .backup-menu button:hover {
+            background-color: var(--surface-hover);
+        }
+
+        /* Mobile "more actions" dropdown (hidden on desktop) */
+        .top-actions-mobile {
+            display: none;
+            position: relative;
+        }
+
+        .more-actions-btn {
+            background-color: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .more-actions-btn:hover {
+            background-color: var(--surface-hover);
+        }
+
+        .more-actions-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background-color: var(--surface-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            min-width: 160px;
+            padding: 6px;
+            z-index: 1500;
+        }
+
+        .more-actions-menu.active {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .more-actions-menu button {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            text-align: left;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .more-actions-menu button:hover {
+            background-color: var(--surface-hover);
+        }
+
+        /* Generic reusable dropdown (used by the register button, the desktop
+           "拡張機能" menu, and the mobile folder export/import button) */
+        .dropdown-wrapper {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background-color: var(--surface-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            min-width: 190px;
+            padding: 6px;
+            z-index: 1500;
+        }
+
+        .dropdown-menu.active {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .dropdown-menu button {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            text-align: left;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .dropdown-menu button:hover {
+            background-color: var(--surface-hover);
+        }
+
+        /* Opens upward - used in the sidebar footer where there isn't room below */
+        .dropdown-menu-up {
+            top: auto;
+            bottom: calc(100% + 6px);
+        }
+
+        /* Stretches to match a full-width wrapper (sidebar footer buttons) */
+        .dropdown-menu-full {
+            left: 0;
+            right: 0;
+            min-width: 0;
+        }
+
+        /* Content Body */
+        .content-body {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .section-title p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        .official-site-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background-color: var(--surface-hover);
+            color: var(--text-main);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .official-site-btn:hover {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .official-site-btn svg {
+            flex-shrink: 0;
+        }
+
+        /* Buttons styling */
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--surface-hover);
+        }
+
+        .btn-ai {
+            background: linear-gradient(135deg, #6c5ce7, #00cec9);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-ai:hover {
+            opacity: 0.9;
+        }
+        .btn-ai:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background-color: #2ecc71 !important;
+        }
+        .btn-success:hover {
+            background-color: #27ae60 !important;
+        }
+
+        .btn-memo {
+            background-color: var(--info);
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+            text-decoration: none;
+        }
+        .btn-memo:hover {
+            opacity: 0.9;
+        }
+
+        /* World Grid */
+        .world-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .world-card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .world-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border-color: rgba(108, 92, 231, 0.4);
+        }
+
+        .world-thumb-container {
+            width: 100%;
+            height: 160px;
+            position: relative;
+            background-color: #252836;
+            overflow: hidden;
+            display: block;
+            cursor: pointer;
+        }
+
+        .world-thumb-container .type-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 2;
+            background: rgba(19, 20, 28, 0.85);
+            backdrop-filter: blur(2px);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .world-thumb-container .folder-badge {
+            position: absolute;
+            top: 36px;
+            left: 8px;
+            z-index: 2;
+            background: rgba(19, 20, 28, 0.85);
+            backdrop-filter: blur(2px);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+            max-width: calc(100% - 16px);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .world-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .world-thumb-container:hover .world-thumb {
+            transform: scale(1.05);
+        }
+
+        .world-content {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .world-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .world-title:hover {
+            color: var(--accent);
+        }
+
+        .world-creator {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .world-memo-preview {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .world-footer {
+            margin-top: auto;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .folder-badge {
+            font-size: 0.75rem;
+            background: var(--bg-color);
+            padding: 3px 8px;
+            border-radius: 6px;
+            color: var(--accent);
+            border: 1px solid var(--border);
+        }
+
+        .badge-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .type-badge {
+            font-size: 0.75rem;
+            background: var(--bg-color);
+            padding: 3px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .type-badge.type-world {
+            color: var(--accent);
+        }
+
+        .type-badge.type-event {
+            color: #feca57;
+            border-color: rgba(254, 202, 87, 0.4);
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+        .icon-btn:hover {
+            color: var(--text-main);
+            background: var(--surface-hover);
+        }
+        .icon-btn.delete:hover {
+            color: var(--danger);
+        }
+
+        /* Detail View */
+        .detail-view {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
+            padding: 30px;
+        }
+        .detail-view.active {
+            display: flex;
+        }
+
+        .detail-back-btn {
+            background: none;
+            border: none;
+            color: var(--accent);
+            cursor: pointer;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .detail-back-btn:hover {
+            text-decoration: underline;
+        }
+
+        .detail-header-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            margin-bottom: 24px;
+            align-items: center;
+        }
+        .detail-thumb {
+            width: 220px;
+            height: 130px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .detail-info h2 {
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+        }
+        .detail-info p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .memo-log-section {
+            background: var(--surface-color);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .memo-log-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .memo-input-box {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .memo-input-box textarea {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+            resize: vertical;
+            min-height: 80px;
+        }
+        .memo-log-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .memo-log-card {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            position: relative;
+        }
+        .memo-log-date {
+            font-size: 0.75rem;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+        .memo-log-text {
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+        }
+        .memo-log-delete {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+        .memo-log-delete:hover {
+            color: var(--danger);
+        }
+
+        /* Empty State */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+            fill: var(--text-muted);
+            opacity: 0.5;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+        .modal h3 {
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .guide-box {
+            background: rgba(108, 92, 231, 0.1);
+            border: 1px solid rgba(108, 92, 231, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .about-feature {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .about-feature:last-of-type {
+            border-bottom: none;
+        }
+
+        .about-feature-icon {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(108, 92, 231, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .about-feature h4 {
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .about-feature p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .about-subfeature {
+            margin-top: 10px;
+            padding: 10px 12px;
+            background: rgba(0, 206, 201, 0.08);
+            border-left: 3px solid var(--accent);
+            border-radius: 6px;
+        }
+
+        .about-subfeature strong {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+            color: var(--accent);
+        }
+
+        .about-subfeature p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Custom Dialog Box */
+        .dialog-content {
+            text-align: center;
+        }
+        .dialog-message {
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: var(--text-main);
+            white-space: pre-wrap;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--surface-color);
+            border: 1px solid var(--primary);
+            color: var(--text-main);
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 2000;
+            font-size: 0.9rem;
+        }
+
+        .folder-add-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(108, 92, 231, 0.4);
+        }
+
+        .folder-add-btn:hover {
+            background: var(--primary-hover);
+            color: white;
+        }
+
+        .folder-data-wrapper {
+            display: none;
+            flex-shrink: 0;
+        }
+
+        .folder-data-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: var(--danger);
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(255, 71, 87, 0.4);
+        }
+
+        .folder-data-btn:hover {
+            background: #e84118;
+            color: white;
+        }
+
+        /* ===== Mobile Responsive ===== */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                height: 100dvh;
+            }
+
+            /* サイドバーを上部の横並びバーに変更し、フォルダは横スクロールにする */
+            aside {
+                width: 100%;
+                height: auto;
+                max-height: none;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                flex-shrink: 0;
+            }
+
+            .sidebar-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                padding: 12px 16px;
+            }
+
+            .sidebar-header-btn {
+                width: auto;
+                flex-shrink: 0;
+            }
+
+            .sidebar-header .search-box {
+                width: auto;
+                flex: 1;
+                min-width: 0;
+                max-width: 120px;
+            }
+
+            .sidebar-header .search-box input {
+                padding: 6px 10px 6px 30px;
+                font-size: 0.8rem;
+                height: 32px;
+            }
+
+            .sidebar-header .search-box svg {
+                left: 10px;
+                width: 13px;
+                height: 13px;
+            }
+
+            .sidebar-header h1 {
+                font-size: 0.85rem;
+            }
+
+            .folder-bar {
+                flex-direction: row;
+                align-items: center;
+                flex: none;
+                gap: 4px;
+                padding-right: 12px;
+            }
+
+            .folder-bar-actions {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-shrink: 0;
+            }
+
+            .folder-list {
+                display: flex;
+                flex-direction: row;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                overflow-y: hidden;
+                padding: 10px 12px;
+                gap: 8px;
+                flex: 1;
+                min-width: 0;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .folder-item {
+                flex-shrink: 0;
+                margin-bottom: 0;
+                white-space: nowrap;
+            }
+
+            .folder-add-btn {
+                display: flex;
+            }
+
+            .folder-data-wrapper {
+                display: flex;
+            }
+
+            .sidebar-footer {
+                display: none;
+            }
+
+            main {
+                flex: 1;
+                min-height: 0;
+            }
+
+            header.top-bar {
+                display: none;
+            }
+
+            .search-box {
+                width: auto;
+                flex: 1;
+                min-width: 0;
+            }
+
+            .top-actions {
+                display: none;
+            }
+
+            .top-actions-mobile {
+                display: block;
+                flex-shrink: 0;
+            }
+
+            .content-body {
+                padding: 16px;
+            }
+
+            .section-header {
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            .section-title h2 {
+                font-size: 1.2rem;
+            }
+
+            .official-site-btn {
+                font-size: 0.72rem;
+                padding: 5px 9px;
+            }
+
+            .section-header > div:last-child {
+                width: 100%;
+            }
+
+            .section-header .btn {
+                width: 100%;
+                justify-content: center;
+                white-space: nowrap;
+            }
+
+            .world-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 12px;
+            }
+
+            .world-title {
+                white-space: normal;
+            }
+
+            .modal-overlay {
+                padding: 16px;
+            }
+
+            .modal {
+                max-width: 100%;
+                max-height: 85vh;
+                overflow-y: auto;
+                padding: 18px;
+            }
+
+            .detail-header-card {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: left;
+            }
+
+            .detail-thumb {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 16 / 9;
+            }
+
+            .detail-header-card .detail-info div {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="sidebar-header">
+            <button type="button" class="sidebar-header-btn" onclick="backToHome(); selectFolder('all');" title="全てのワールドを表示">
+                <h1>Clus World <span>Stock</span><span class="beta-badge">β</span></h1>
+            </button>
+        </div>
+        <div class="folder-bar">
+            <div class="folder-list" id="folderList">
+                <!-- Dynamically populated folders -->
+            </div>
+            <div class="folder-bar-actions">
+                <button type="button" class="folder-add-btn" title="新しいフォルダ" aria-label="新しいフォルダ" onclick="openNewFolderModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+                <div class="dropdown-wrapper folder-data-wrapper" id="folderDataDropdown">
+                    <button type="button" class="folder-data-btn" title="フォルダのエクスポート・インポート" aria-label="フォルダのエクスポート・インポート" aria-haspopup="true" aria-expanded="false" onclick="toggleDropdown(event, 'folderDataMenu')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                    </button>
+                    <div class="dropdown-menu" id="folderDataMenu">
+                        <button type="button" onclick="toggleDropdown(event, 'folderDataMenu'); openFolderExportModal()">フォルダエクスポート</button>
+                        <button type="button" onclick="toggleDropdown(event, 'folderDataMenu'); openFolderImportModal()">フォルダインポート</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="sidebar-footer">
+            <button class="btn btn-secondary" onclick="openNewFolderModal()" style="width: 100%;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                新しいフォルダ
+            </button>
+            <div class="dropdown-wrapper" style="width: 100%;">
+                <button type="button" class="btn btn-secondary" onclick="toggleDropdown(event, 'extensionsMenu')" aria-haspopup="true" aria-expanded="false" style="width: 100%; justify-content: space-between;">
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                        拡張機能
+                    </span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="dropdown-menu dropdown-menu-up dropdown-menu-full" id="extensionsMenu">
+                    <button type="button" onclick="toggleDropdown(event, 'extensionsMenu'); openFolderExportModal()">フォルダエクスポート</button>
+                    <button type="button" onclick="toggleDropdown(event, 'extensionsMenu'); openFolderImportModal()">フォルダインポート</button>
+                </div>
+            </div>
+            <button class="btn btn-secondary" onclick="openAboutModal()" style="width: 100%;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                このサイトについて
+            </button>
+        </div>
+    </aside>
+
+    <main>
+        <header class="top-bar">
+            <div class="search-box">
+                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <input type="text" id="searchInput" placeholder="ワールド名やクリエイター名で検索..." oninput="renderWorlds()">
+            </div>
+            <div class="top-actions">
+                <div class="backup-dropdown">
+                    <button type="button" class="btn btn-secondary" onclick="toggleBackupMenu(event)" aria-haspopup="true" aria-expanded="false">
+                        バックアップ
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="backup-menu" id="backupMenu">
+                        <button type="button" onclick="toggleBackupMenu(event); openImportModal()">インポート</button>
+                        <button type="button" onclick="toggleBackupMenu(event); exportData()">エクスポート</button>
+                    </div>
+                </div>
+            </div>
+            <div class="top-actions-mobile" id="topActionsMobile">
+                <button type="button" class="more-actions-btn" aria-label="その他の操作" aria-haspopup="true" aria-expanded="false" onclick="toggleTopActionsMenu(event)">&#8942;</button>
+                <div class="more-actions-menu" id="topActionsMenu">
+                    <button type="button" onclick="toggleTopActionsMenu(event); openImportModal()">インポート</button>
+                    <button type="button" onclick="toggleTopActionsMenu(event); exportData()">エクスポート</button>
+                    <button type="button" onclick="toggleTopActionsMenu(event); openAboutModal()">このサイトについて</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Home Grid View -->
+        <div class="content-body" id="homeView">
+            <div class="section-header">
+                <div class="section-title">
+                    <h2 id="currentFolderName">全てのワールド</h2>
+                    <a href="https://cluster.mu/" target="_blank" rel="noopener noreferrer" class="official-site-btn">
+                        公式サイト
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    </a>
+                </div>
+                <div class="dropdown-wrapper">
+                    <button type="button" class="btn" onclick="toggleDropdown(event, 'registerMenu')" aria-haspopup="true" aria-expanded="false">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                        登録する
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div class="dropdown-menu" id="registerMenu">
+                        <button type="button" onclick="toggleDropdown(event, 'registerMenu'); openAddWorldModal('world')">🌐 ワールドを登録</button>
+                        <button type="button" onclick="toggleDropdown(event, 'registerMenu'); openAddWorldModal('event')">🎫 イベントを登録</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="world-grid" id="worldGrid">
+                <!-- Dynamically populated world cards -->
+            </div>
+        </div>
+
+        <!-- Detail View -->
+        <div class="detail-view" id="detailView">
+            <button class="detail-back-btn" onclick="backToHome()">← 一覧に戻る</button>
+            <div id="detailContentContainer">
+                <!-- Dynamically populated world detail contents -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal: Add / Edit World -->
+    <div class="modal-overlay" id="worldModal">
+        <div class="modal">
+            <h3 id="worldModalTitle">ワールドを登録</h3>
+            <form id="worldForm" onsubmit="saveWorld(event)">
+                <input type="hidden" id="worldEditId">
+                <input type="hidden" id="worldTypeInput" value="world">
+                <div class="form-group">
+                    <label id="worldUrlLabel">ワールドURL (cluster.mu/w/...)</label>
+                    <div style="display:flex; gap:8px;">
+                        <input type="url" id="worldUrl" placeholder="https://cluster.mu/w/..." required style="width: 100%;" oninput="scheduleAutoFetchMeta()">
+                        <button type="button" class="btn-ai" id="fetchMetaBtn" style="flex-shrink:0; white-space:nowrap;" onclick="fetchWorldMetadata()">🔍 自動取得</button>
+                    </div>
+                    <p id="fetchMetaStatus" style="font-size:0.8rem; color: var(--text-muted); margin-top:6px; min-height: 1.1em;"></p>
+                </div>
+                <div class="form-group">
+                    <label id="worldNameLabel">ワールド名</label>
+                    <input type="text" id="worldName" placeholder="例: クラスターロビー" required>
+                </div>
+                <div class="form-group">
+                    <label>クリエイター名</label>
+                    <input type="text" id="worldCreator" placeholder="例: クリエイター名">
+                </div>
+                <div class="form-group" style="display:none;">
+                    <label>サムネイル画像 URL</label>
+                    <input type="url" id="worldThumb" placeholder="https://cluster-file-storage.imgix.net/uploads/..." style="width:100%;">
+                </div>
+                <div class="form-group">
+                    <label>所属フォルダ</label>
+                    <select id="worldFolderSelect"></select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('worldModal')">キャンセル</button>
+                    <button type="submit" class="btn" id="saveWorldBtn">保存する</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: New Folder -->
+    <div class="modal-overlay" id="folderModal">
+        <div class="modal">
+            <h3 id="folderModalTitle">新しいフォルダを作成</h3>
+            <form id="folderForm" onsubmit="saveFolder(event)">
+                <input type="hidden" id="folderEditId">
+                <div class="form-group">
+                    <label>フォルダ名</label>
+                    <input type="text" id="folderNameInput" placeholder="例: お気に入り" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('folderModal')">キャンセル</button>
+                    <button type="submit" class="btn" id="saveFolderBtn">作成</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Import Backup File -->
+    <div class="modal-overlay" id="importModal">
+        <div class="modal" style="max-width: 500px;">
+            <h3>データのインポート</h3>
+            <div class="guide-box">
+                <h4>📂 バックアップファイルから復元</h4>
+                <p>「書き出し」で保存したJSONファイルを選択してデータを読み込みます。<br><span style="color:var(--danger)">※現在のデータはすべて上書きされます。</span></p>
+                <div style="margin-top: 15px;">
+                    <input type="file" id="backupFileInput" accept=".json" style="width: 100%; padding: 8px; background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main);">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('importModal')">閉じる</button>
+                <button type="button" class="btn" onclick="importBackupFile()">ファイルを読み込む</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: About This Site -->
+    <div class="modal-overlay" id="aboutModal">
+        <div class="modal" style="max-width: 520px; max-height: 85vh; overflow-y: auto;">
+            <h3>🌐 このサイトについて</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+                clusterで見つけたお気に入りのワールドやイベントをローカル（端末のブラウザ内）保存し、フォルダで整理して管理できるツールです。
+            </p>
+
+            <div class="about-feature">
+                <div class="about-feature-icon">📁</div>
+                <div>
+                    <h4>フォルダで整理</h4>
+                    <p>サイドバーの「＋」からフォルダを作成し、ワールド・イベントをジャンルやお気に入り度ごとに分類できます。フォルダ名の横のアイコンから、名前の変更や削除もできます（削除すると中身は「未分類」に移動します）。</p>
+                </div>
+            </div>
+
+            <div class="about-feature">
+                <div class="about-feature-icon">➕</div>
+                <div>
+                    <h4>ワールド・イベントを登録</h4>
+                    <p>「登録する」から「ワールドを登録」または「イベントを登録」を選び、URLを入力すると名前やサムネイルを自動取得できます（🔍 自動取得）。登録した項目には「ワールド」「イベント」のタグが表示されます。</p>
+                </div>
+            </div>
+
+            <div class="about-feature">
+                <div class="about-feature-icon">📝</div>
+                <div>
+                    <h4>メモ</h4>
+                    <p>詳細ページでは、訪問メモや感想の記録ができます。</p>
+                </div>
+            </div>
+
+            <div class="about-feature">
+                <div class="about-feature-icon">🔍</div>
+                <div>
+                    <h4>検索</h4>
+                    <p>ワールド名やクリエイター名で、登録した項目をすぐに検索できます。</p>
+                </div>
+            </div>
+
+            <div class="about-feature">
+                <div class="about-feature-icon">💾</div>
+                <div>
+                    <h4>バックアップ</h4>
+                    <p>PC表示では「バックアップ」ボタン、スマホ表示では「⋮」メニューから、「インポート」「エクスポート」でデータ全体をJSONファイルに保存・復元できます（インポートは現在のデータを上書きします）。機種変更時などにご利用ください。</p>
+                </div>
+            </div>
+
+            <div class="about-feature">
+                <div class="about-feature-icon">📤</div>
+                <div>
+                    <h4>フォルダ単位のエクスポート／インポート</h4>
+                    <p>PC表示ではサイドバー下部の「拡張機能」、スマホ表示ではフォルダ一覧横の赤い丸ボタンから、「フォルダエクスポート」「フォルダインポート」を利用できます。エクスポートは選んだフォルダ内のワールド・イベント情報（メモは含みません）だけを書き出します。インポートすると常に新しいフォルダとして追加され、同名のフォルダが既にある場合は「フォルダ名(1)」のように自動で番号が付きます。</p>
+                    <div class="about-subfeature">
+                        <strong>👥 友達とお気に入りのワールドを共有しよう</strong>
+                        <p>「フォルダエクスポート」で書き出したJSONファイルを友達に送り、友達が「フォルダインポート」で読み込むだけで、あなたのお気に入りフォルダをそのまま友達の端末でも楽しんでもらえます。友人間でファイルをやり取りするだけでフォルダを共有できる、手軽な共有方法です。<br>※メモはエクスポートデータに含まれないため、共有されません。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="guide-box" style="margin-top: 4px; margin-bottom: 0;">
+                データはすべてこの端末のブラウザ内に保存されます。定期的に「エクスポート」でバックアップを取ることをおすすめします。
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn" onclick="closeModal('aboutModal')">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Folder Export -->
+    <div class="modal-overlay" id="folderExportModal">
+        <div class="modal" style="max-width: 440px;">
+            <h3>フォルダエクスポート</h3>
+            <div class="form-group">
+                <label>エクスポートするフォルダ</label>
+                <select id="folderExportSelect"></select>
+            </div>
+            <div class="guide-box" id="folderExportGuideBox" style="margin-bottom: 0; cursor: pointer; user-select: none;" onclick="handleFolderExportGuideTap()">
+                <span id="folderExportGuideText">選択したフォルダ内のワールド・イベント情報をJSONファイルに書き出します。<br>※メモは含まれません。</span>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('folderExportModal')">キャンセル</button>
+                <button type="button" class="btn" id="folderExportSubmitBtn" onclick="handleFolderExportSubmit()">エクスポート</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Folder Import -->
+    <div class="modal-overlay" id="folderImportModal">
+        <div class="modal" style="max-width: 480px;">
+            <h3>フォルダインポート</h3>
+            <div class="guide-box">
+                <h4>📂 フォルダ単位で復元</h4>
+                <p>「フォルダエクスポート」で書き出したJSONファイルを選択してください。<br>現在のデータ全体は保持されたまま、新しいフォルダとして追加されます。同名のフォルダが既にある場合は「フォルダ名(1)」のように自動で番号が付きます。</p>
+                <div style="margin-top: 15px;">
+                    <input type="file" id="folderImportFileInput" accept=".json" style="width: 100%; padding: 8px; background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main);">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('folderImportModal')">閉じる</button>
+                <button type="button" class="btn" onclick="importFolderFile()">インポートする</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Custom Dialog Box (replaces alert/confirm) -->
+    <div class="modal-overlay" id="customDialogModal">
+        <div class="modal" style="max-width: 400px;">
+            <h3 id="dialogTitle">確認</h3>
+            <div class="dialog-content">
+                <p class="dialog-message" id="dialogMessage">メッセージ</p>
+            </div>
+            <div class="modal-footer" id="dialogFooter">
+                <button type="button" class="btn btn-secondary" id="dialogCancelBtn" onclick="closeCustomDialog(false)">キャンセル</button>
+                <button type="button" class="btn" id="dialogOkBtn" onclick="closeCustomDialog(true)">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">保存しました</div>
+
+    <script>
+        let state = {
+            folders: [
+                { id: 'all', name: '全てのワールド', icon: '🌍' },
+                { id: 'all_events', name: '全てのイベント', icon: '🎫' },
+                { id: 'official', name: '公式', icon: '⭐' },
+                { id: 'uncategorized', name: '未分類', icon: '📁' }
+            ],
+            worlds: [
+                {
+                    id: 'w_lobby_default',
+                    name: 'クラスターロビー',
+                    url: 'https://cluster.mu/w/ac642699-be79-4fc5-abee-ae1c51c5ec7a',
+                    creator: 'Cluster, Inc.',
+                    thumb: '',
+                    folder: 'official',
+                    type: 'world',
+                    memos: [
+                        { id: 'm1', date: new Date().toLocaleString(), text: '初期登録されている公式クラスターロビーです。' }
+                    ],
+                    addedAt: new Date().toISOString()
+                }
+            ],
+            currentFolder: 'all',
+            currentDetailWorldId: null
+        };
+
+        // 仮想フォルダ（実際のフォルダではなく、一覧のための特別な表示）のID
+        const VIRTUAL_FOLDER_IDS = ['all', 'all_events'];
+
+        // Custom Dialog Callback
+        let dialogCallback = null;
+
+        function showCustomDialog(title, message, isConfirm = false, callback = null) {
+            document.getElementById('dialogTitle').textContent = title;
+            document.getElementById('dialogMessage').textContent = message;
+            dialogCallback = callback;
+
+            const cancelBtn = document.getElementById('dialogCancelBtn');
+            if (isConfirm) {
+                cancelBtn.style.display = 'inline-flex';
+            } else {
+                cancelBtn.style.display = 'none';
+            }
+
+            document.getElementById('customDialogModal').classList.add('active');
+        }
+
+        function closeCustomDialog(result) {
+            document.getElementById('customDialogModal').classList.remove('active');
+            if (dialogCallback) {
+                const cb = dialogCallback;
+                dialogCallback = null;
+                cb(result);
+            }
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('cluster_messenger_state_v7');
+            if (saved) {
+                try {
+                    state = JSON.parse(saved);
+                    if (!state.folders.some(f => f.id === 'all')) {
+                        state.folders.unshift({ id: 'all', name: '全てのワールド', icon: '🌍' });
+                    }
+                    if (!state.folders.some(f => f.id === 'all_events')) {
+                        state.folders.splice(1, 0, { id: 'all_events', name: '全てのイベント', icon: '🎫' });
+                    }
+                    if (!state.folders.some(f => f.id === 'official')) {
+                        state.folders.splice(2, 0, { id: 'official', name: '公式', icon: '⭐' });
+                    }
+                    if (!state.folders.some(f => f.id === 'uncategorized')) {
+                        state.folders.push({ id: 'uncategorized', name: '未分類', icon: '📁' });
+                    }
+                    state.worlds.forEach(w => {
+                        if (!w.memos) w.memos = [];
+                        if (!w.type) w.type = 'world';
+                        delete w.gallery;
+                    });
+                } catch(e) {
+                    console.error('Failed to load saved state', e);
+                }
+            }
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem('cluster_messenger_state_v7', JSON.stringify(state));
+                return true;
+            } catch (e) {
+                console.error('Failed to save state', e);
+                showCustomDialog('エラー', '保存に失敗しました。ブラウザの保存容量が上限に達している可能性があります。');
+                return false;
+            }
+        }
+
+        function placeholderThumbDataUrl(label) {
+            const text = String(label || 'Cluster World').slice(0, 24);
+            const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">'
+                + '<rect width="600" height="400" fill="#181a26"/>'
+                + '<text x="50%" y="50%" fill="#6c5ce7" font-family="sans-serif" font-size="30" text-anchor="middle" dominant-baseline="middle">' + escaped + '</text>'
+                + '</svg>';
+            return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+        }
+
+        function isSafeUrl(url) {
+            if (!url) return true;
+            try {
+                const parsed = new URL(url, 'https://dummy-base.invalid/');
+                return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 2500);
+        }
+
+        // cluster.muのワールドページの og:title / og:image を、SNSのリンクプレビュー生成にも使われる
+        // OGP専用API「Microlink」経由で取得する（APIキー不要、1日50回まで無料）
+        async function fetchPageMetaViaMicrolink(url) {
+            const apiUrl = 'https://api.microlink.io?url=' + encodeURIComponent(url) + '&meta';
+            const fetchPromise = fetch(apiUrl);
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('タイムアウトしました')), 15000);
+            });
+            const res = await Promise.race([fetchPromise, timeoutPromise]);
+
+            if (res.status === 429) throw new Error('無料枠の上限（1日50回）に達した可能性があります');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+
+            const json = await res.json();
+            if (json.status !== 'success' || !json.data) {
+                throw new Error(json.message || 'ページ情報を取得できませんでした');
+            }
+
+            let foundName = (json.data.title || '').trim();
+            // 「ワールド名 | サイト名」のような区切りがあれば、サイト名部分を落として世界名だけにする
+            if (foundName.includes(' | ')) {
+                foundName = foundName.split(' | ')[0].trim();
+            }
+            let foundThumb = (json.data.image && json.data.image.url ? json.data.image.url : '').trim();
+            // "//example.com/img.png" のようなプロトコル省略URLは https: を補って正規化する
+            if (foundThumb.startsWith('//')) {
+                foundThumb = 'https:' + foundThumb;
+            }
+
+            return { name: foundName, thumb: foundThumb };
+        }
+
+        // Microlinkの無料枠上限などで取得できない場合の代替手段。
+        // CORSプロキシ「AllOrigins」経由でページのHTMLをそのまま取得し、
+        // og:title / og:image タグを自前で読み取る（APIキー不要・無料）。
+        async function fetchPageMetaViaAllOrigins(url) {
+            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+            const fetchPromise = fetch(proxyUrl);
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('タイムアウトしました')), 15000);
+            });
+            const res = await Promise.race([fetchPromise, timeoutPromise]);
+
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+
+            const html = await res.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+
+            const readMeta = (attr, value) => {
+                const el = doc.querySelector(`meta[${attr}="${value}"]`);
+                return el ? (el.getAttribute('content') || '').trim() : '';
+            };
+
+            let foundName = readMeta('property', 'og:title') || readMeta('name', 'twitter:title');
+            if (!foundName) {
+                const titleEl = doc.querySelector('title');
+                foundName = titleEl ? titleEl.textContent.trim() : '';
+            }
+            if (foundName.includes(' | ')) {
+                foundName = foundName.split(' | ')[0].trim();
+            }
+
+            let foundThumb = readMeta('property', 'og:image') || readMeta('name', 'twitter:image');
+            if (foundThumb) {
+                try {
+                    // 相対URL（"/img/xxx.png"など）は元ページのURLを基準に絶対URLへ変換する
+                    foundThumb = new URL(foundThumb, url).href;
+                } catch (e) {
+                    // 変換に失敗した場合は取得した値をそのまま使う
+                }
+            }
+
+            if (!foundName && !foundThumb) {
+                throw new Error('ページからタイトル・画像情報を取得できませんでした');
+            }
+
+            return { name: foundName, thumb: foundThumb };
+        }
+
+        // まずMicrolinkで取得を試み、無料枠の上限検知や取得失敗などで使えない場合は
+        // 自動的にAllOrigins経由の代替手段に切り替えて再取得する。
+        async function fetchPageMetaWithFallback(url, onStatusUpdate) {
+            try {
+                const result = await fetchPageMetaViaMicrolink(url);
+                return { ...result, usedFallback: false };
+            } catch (primaryError) {
+                console.error('Microlinkでの取得に失敗。代替手段に切り替えます', primaryError);
+                const isQuotaError = !!(primaryError && /無料枠/.test(primaryError.message || ''));
+                if (onStatusUpdate) {
+                    onStatusUpdate(isQuotaError
+                        ? 'Microlinkの無料枠の上限を検知したため、別の方法で再取得しています…'
+                        : 'Microlinkでの取得に失敗したため、別の方法で再取得しています…');
+                }
+                const result = await fetchPageMetaViaAllOrigins(url);
+                return { ...result, usedFallback: true };
+            }
+        }
+
+        async function checkImageLoads(url) {
+            return new Promise((resolve) => {
+                const testImg = new Image();
+                const timer = setTimeout(() => resolve(false), 8000);
+                testImg.onload = () => { clearTimeout(timer); resolve(true); };
+                testImg.onerror = () => { clearTimeout(timer); resolve(false); };
+                testImg.src = url;
+            });
+        }
+
+        function resetFetchMetaStatus() {
+            const statusEl = document.getElementById('fetchMetaStatus');
+            const btn = document.getElementById('fetchMetaBtn');
+            const saveBtn = document.getElementById('saveWorldBtn');
+            if (statusEl) statusEl.textContent = '';
+            if (btn) { btn.disabled = false; btn.textContent = '🔍 自動取得'; }
+            if (saveBtn) saveBtn.classList.remove('btn-success');
+        }
+
+        // ワールドURL欄に入力があった際、少し待ってから自動でfetchWorldMetadata()を実行する
+        // （ボタンを押さなくても、URLを入力し終えた時点で自動取得が走るようにするため）
+        let autoFetchMetaTimer = null;
+        function scheduleAutoFetchMeta() {
+            if (autoFetchMetaTimer) clearTimeout(autoFetchMetaTimer);
+            const url = document.getElementById('worldUrl').value.trim();
+            if (!url || !isSafeUrl(url) || !/^https?:\/\/.+/i.test(url)) return;
+            autoFetchMetaTimer = setTimeout(() => {
+                fetchWorldMetadata();
+            }, 600);
+        }
+
+        // 「ワールドを登録」フォームの🔍自動取得ボタン用。入力されたURLから
+        // fetchPageMetaWithFallback（Microlink→ダメならAllOrigins）でタイトル・サムネイルを取得し、フォームに反映する。
+        async function fetchWorldMetadata() {
+            const urlInput = document.getElementById('worldUrl');
+            const statusEl = document.getElementById('fetchMetaStatus');
+            const btn = document.getElementById('fetchMetaBtn');
+            const saveBtn = document.getElementById('saveWorldBtn');
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                statusEl.style.color = 'var(--danger)';
+                statusEl.textContent = 'まずワールドURLを入力してください。';
+                return;
+            }
+            if (!isSafeUrl(url)) {
+                statusEl.style.color = 'var(--danger)';
+                statusEl.textContent = 'URLの形式が正しくありません。';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '取得中...';
+            if (saveBtn) saveBtn.classList.remove('btn-success');
+            statusEl.style.color = 'var(--text-muted)';
+            statusEl.textContent = 'ページ情報を取得しています…（Microlink経由）';
+
+            try {
+                const { name: foundName, thumb: foundThumb, usedFallback } = await fetchPageMetaWithFallback(url, (msg) => {
+                    statusEl.style.color = 'var(--text-muted)';
+                    statusEl.textContent = msg;
+                });
+
+                const updated = [];
+                if (foundName) {
+                    document.getElementById('worldName').value = foundName;
+                    updated.push('タイトル');
+                }
+
+                let thumbLoadWarning = '';
+                if (foundThumb && isSafeUrl(foundThumb)) {
+                    document.getElementById('worldThumb').value = foundThumb;
+                    updated.push('サムネイル');
+                    // 実際にブラウザで画像として読み込めるか、その場で確認しておく
+                    const canLoad = await checkImageLoads(foundThumb);
+                    if (!canLoad) {
+                        thumbLoadWarning = ' ただしサムネイル画像の読み込みに失敗したため、表示されない可能性があります。';
+                    }
+                }
+
+                if (updated.length > 0) {
+                    statusEl.style.color = thumbLoadWarning ? 'var(--danger)' : 'var(--accent)';
+                    const sourceNote = usedFallback ? '（代替手段で取得）' : '';
+                    statusEl.textContent = `✓ ${updated.join('・')}を自動反映しました${sourceNote}。内容を確認して保存してください。${thumbLoadWarning}`;
+                    if (saveBtn) saveBtn.classList.add('btn-success');
+                } else {
+                    statusEl.style.color = 'var(--danger)';
+                    statusEl.textContent = 'ページからタイトル・サムネイルを見つけられませんでした。お手数ですが手入力をお願いします。';
+                }
+            } catch (e) {
+                console.error('Failed to fetch world metadata', e);
+                statusEl.style.color = 'var(--danger)';
+                statusEl.textContent = '自動取得に失敗しました（' + (e && e.message ? e.message : '接続できません') + '）。手入力をお願いします。';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔍 自動取得';
+            }
+        }
+
+        // デフォルトで入っている「クラスターロビー」項目のサムネイルを、Microlink（ダメならAllOrigins代替）経由で
+        // 自動取得してトップページに反映する。一度取得できればstateに保存されるため、
+        // 以後の起動時には再取得しない。
+        async function autoFetchDefaultLobbyThumbnail() {
+            const world = state.worlds.find(w => w.id === 'w_lobby_default');
+            if (!world || world.thumb || !isSafeUrl(world.url)) return;
+
+            try {
+                const { thumb: foundThumb } = await fetchPageMetaWithFallback(world.url);
+                if (!foundThumb || !isSafeUrl(foundThumb)) return;
+
+                const canLoad = await checkImageLoads(foundThumb);
+                if (!canLoad) return;
+
+                world.thumb = foundThumb;
+                saveData();
+                renderWorlds();
+                if (state.currentDetailWorldId === world.id) {
+                    renderDetailContent(world);
+                }
+            } catch (e) {
+                console.error('Failed to auto-fetch default lobby thumbnail', e);
+            }
+        }
+
+        function renderFolders() {
+            const listEl = document.getElementById('folderList');
+            listEl.innerHTML = '';
+
+            state.folders.forEach(folder => {
+                let count;
+                if (folder.id === 'all') {
+                    count = state.worlds.length;
+                } else if (folder.id === 'all_events') {
+                    count = state.worlds.filter(w => w.type === 'event').length;
+                } else {
+                    count = state.worlds.filter(w => w.folder === folder.id).length;
+                }
+
+                const canManage = !VIRTUAL_FOLDER_IDS.includes(folder.id) && folder.id !== 'uncategorized';
+
+                const div = document.createElement('div');
+                div.className = `folder-item ${state.currentFolder === folder.id ? 'active' : ''}`;
+                div.onclick = () => {
+                    backToHome();
+                    selectFolder(folder.id);
+                };
+                div.innerHTML = `
+                    <div class="folder-info">
+                        <span>${escapeHtml(folder.icon || '📁')}</span>
+                        <span class="folder-name-text">${escapeHtml(folder.name)}</span>
+                    </div>
+                    <div class="folder-item-right">
+                        ${canManage ? `
+                        <button type="button" class="folder-action-btn" title="フォルダ名を変更" aria-label="フォルダ名を変更">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                        <button type="button" class="folder-action-btn delete" title="フォルダを削除" aria-label="フォルダを削除">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>` : ''}
+                        <span class="folder-count">${count}</span>
+                    </div>
+                `;
+                if (canManage) {
+                    const renameBtn = div.querySelector('.folder-action-btn:not(.delete)');
+                    const deleteBtn = div.querySelector('.folder-action-btn.delete');
+                    renameBtn.onclick = (e) => { e.stopPropagation(); openRenameFolderModal(folder.id); };
+                    deleteBtn.onclick = (e) => { e.stopPropagation(); requestDeleteFolder(folder.id); };
+                }
+                listEl.appendChild(div);
+            });
+
+            const selectEl = document.getElementById('worldFolderSelect');
+            selectEl.innerHTML = '';
+            state.folders.filter(f => !VIRTUAL_FOLDER_IDS.includes(f.id)).forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f.id;
+                opt.textContent = f.name;
+                selectEl.appendChild(opt);
+            });
+        }
+
+        function selectFolder(folderId) {
+            state.currentFolder = folderId;
+            renderFolders();
+            
+            const folder = state.folders.find(f => f.id === folderId);
+            if (folder) {
+                document.getElementById('currentFolderName').textContent = folder.name;
+            }
+            renderWorlds();
+        }
+
+        function renderWorlds() {
+            const gridEl = document.getElementById('worldGrid');
+            const searchInput = document.getElementById('searchInput');
+            const searchQuery = searchInput ? searchInput.value.toLowerCase() : '';
+
+            let filtered = state.worlds;
+
+            if (state.currentFolder === 'all_events') {
+                filtered = filtered.filter(w => w.type === 'event');
+            } else if (state.currentFolder !== 'all') {
+                filtered = filtered.filter(w => w.folder === state.currentFolder);
+            }
+
+            if (searchQuery) {
+                filtered = filtered.filter(w => 
+                    w.name.toLowerCase().includes(searchQuery) || 
+                    (w.creator && w.creator.toLowerCase().includes(searchQuery)) ||
+                    (w.memos && w.memos.some(m => m.text.toLowerCase().includes(searchQuery)))
+                );
+            }
+
+            if (filtered.length === 0) {
+                gridEl.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.95 3.3-1.45 5.2-1.45 1.35 0 2.7.15 3.8.5.25.1.5-.1.5-.35V6.3c-.1-.1-.2-.2-.5-.3zM20 18.5c-1.05-.3-2.15-.45-3.25-.45-1.5 0-3.15.35-4.5 1.25V7.25C13.6 6.35 15.25 6 16.75 6c1.1 0 2.2.15 3.25.45v12.05z"/></svg>
+                        <p>ワールドが見つかりませんでした</p>
+                        <p style="font-size: 0.8rem; margin-top: 8px;">右上の「ワールドを登録」から追加してください</p>
+                    </div>
+                `;
+                return;
+            }
+
+            gridEl.innerHTML = '';
+            filtered.forEach(world => {
+                const folderObj = state.folders.find(f => f.id === world.folder) || { name: '未分類' };
+                let thumbUrl = world.thumb;
+                if (!thumbUrl) {
+                    thumbUrl = placeholderThumbDataUrl(world.name || 'Cluster World');
+                }
+                
+                let latestMemo = world.memos && world.memos.length > 0 ? world.memos[world.memos.length - 1].text : '';
+                let memoPreviewClass = latestMemo ? '' : 'display:none;';
+                
+                const card = document.createElement('div');
+                card.className = 'world-card';
+                card.innerHTML = `
+                    <div class="world-thumb-container" onclick="openDetail('${world.id}')" title="詳細ページを開く">
+                        <img src="${escapeHtml(thumbUrl)}" class="world-thumb" alt="${escapeHtml(world.name)}" onerror="this.onerror=null; this.src=placeholderThumbDataUrl('Cluster World');">
+                        <span class="type-badge ${world.type === 'event' ? 'type-event' : 'type-world'}">${world.type === 'event' ? 'イベント' : 'ワールド'}</span>
+                        <span class="folder-badge" title="${escapeHtml(folderObj.name)}">${escapeHtml(folderObj.name)}</span>
+                    </div>
+                    <div class="world-content">
+                        <div class="world-title" onclick="openDetail('${world.id}')" title="${escapeHtml(world.name)}">${escapeHtml(world.name)}</div>
+                        <div class="world-creator">${escapeHtml(world.creator || 'Cluster Creator')}</div>
+                        <div class="world-memo-preview" style="${memoPreviewClass}" title="${escapeHtml(latestMemo)}">📝 ${escapeHtml(latestMemo)}</div>
+                        <div class="world-footer">
+                            <div class="card-actions">
+                                <button type="button" class="btn-memo" onclick="openDetail('${world.id}')" title="詳細・メモを見る">
+                                    メモ
+                                </button>
+                                <a href="${escapeHtml(world.url)}" target="_blank" rel="noopener noreferrer" class="icon-btn" title="Clusterで開く">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                </a>
+                                <button type="button" class="icon-btn" onclick="editWorld('${world.id}')" title="編集">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                </button>
+                                <button type="button" class="icon-btn delete" onclick="deleteWorld(event, '${world.id}')" title="削除">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                gridEl.appendChild(card);
+            });
+        }
+
+        /* Detail View Functions */
+        function openDetail(worldId) {
+            const world = state.worlds.find(w => String(w.id) === String(worldId));
+            if (!world) return;
+
+            state.currentDetailWorldId = world.id;
+            const homeView = document.getElementById('homeView');
+            const detailView = document.getElementById('detailView');
+            
+            homeView.style.display = 'none';
+            detailView.classList.add('active');
+            detailView.style.display = 'flex';
+
+            renderDetailContent(world);
+        }
+
+        function backToHome() {
+            state.currentDetailWorldId = null;
+            const detailView = document.getElementById('detailView');
+            const homeView = document.getElementById('homeView');
+            
+            detailView.classList.remove('active');
+            detailView.style.display = 'none';
+            homeView.style.display = 'block';
+            renderWorlds();
+        }
+
+        function renderDetailContent(world) {
+            const container = document.getElementById('detailContentContainer');
+            const folderObj = state.folders.find(f => f.id === world.folder) || { name: '未分類' };
+            let thumbUrl = world.thumb;
+            if (!thumbUrl) {
+                thumbUrl = placeholderThumbDataUrl(world.name);
+            }
+
+            let memosHtml = '';
+            if (world.memos && world.memos.length > 0) {
+                memosHtml = world.memos.slice().reverse().map(m => `
+                    <div class="memo-log-card">
+                        <button class="memo-log-delete" onclick="deleteMemoLog('${world.id}', '${m.id}')" title="このメモを削除">×</button>
+                        <div class="memo-log-date">📅 ${m.date}</div>
+                        <div class="memo-log-text">${escapeHtml(m.text)}</div>
+                    </div>
+                `).join('');
+            } else {
+                memosHtml = `<p style="color: var(--text-muted); font-size: 0.9rem;">まだメモの記録はありません。下のフォームから記録を残しましょう！</p>`;
+            }
+
+            container.innerHTML = `
+                <div class="detail-header-card">
+                    <img src="${escapeHtml(thumbUrl)}" class="detail-thumb" alt="${escapeHtml(world.name)}" onerror="this.onerror=null; this.src=placeholderThumbDataUrl('Cluster World');">
+                    <div class="detail-info">
+                        <h2>${escapeHtml(world.name)}</h2>
+                        <p>👤 クリエイター: ${escapeHtml(world.creator || 'Cluster Creator')}</p>
+                        <p>🏷 種別: <span class="type-badge ${world.type === 'event' ? 'type-event' : 'type-world'}">${world.type === 'event' ? 'イベント' : 'ワールド'}</span></p>
+                        <p>📁 フォルダ: <span class="folder-badge">${escapeHtml(folderObj.name)}</span></p>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <a href="${escapeHtml(world.url)}" target="_blank" rel="noopener noreferrer" class="btn" style="padding: 8px 14px; font-size: 0.85rem;">
+                                🚀 Clusterで開く
+                            </a>
+                            <button class="btn btn-secondary" onclick="editWorld('${world.id}')" style="padding: 8px 14px; font-size: 0.85rem;">
+                                ✏️ 情報を編集
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="memo-log-section">
+                    <div class="memo-log-header">📝 メモ・感想ログ</div>
+                    <div class="memo-input-box">
+                        <textarea id="newMemoText" rows="3" placeholder="このワールドでの思い出や感想、メモを入力..."></textarea>
+                        <button class="btn" style="align-self: flex-end;" onclick="addMemoLog('${world.id}')">メモを追加する</button>
+                    </div>
+                    <div class="memo-log-list">
+                        ${memosHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function addMemoLog(worldId) {
+            const textarea = document.getElementById('newMemoText');
+            const text = textarea.value.trim();
+            if (!text) return;
+
+            const world = state.worlds.find(w => String(w.id) === String(worldId));
+            if (world) {
+                if (!world.memos) world.memos = [];
+                const newMemo = {
+                    id: 'm_' + Date.now(),
+                    date: new Date().toLocaleString(),
+                    text: text
+                };
+                world.memos.push(newMemo);
+                if (!saveData()) {
+                    world.memos.pop();
+                    return;
+                }
+                renderDetailContent(world);
+                showToast('メモを追加しました');
+            }
+        }
+
+        function deleteMemoLog(worldId, memoId) {
+            const world = state.worlds.find(w => String(w.id) === String(worldId));
+            if (world && world.memos) {
+                world.memos = world.memos.filter(m => String(m.id) !== String(memoId));
+                saveData();
+                renderDetailContent(world);
+                showToast('メモを削除しました');
+            }
+        }
+
+        function updateWorldModalLabels(type) {
+            const isEvent = type === 'event';
+            const isEditing = !!document.getElementById('worldEditId').value;
+            document.getElementById('worldModalTitle').textContent = isEditing
+                ? (isEvent ? 'イベント情報を編集' : 'ワールド情報を編集')
+                : (isEvent ? 'イベントを登録' : 'ワールドを登録');
+            document.getElementById('worldUrlLabel').textContent = isEvent ? 'イベントURL (cluster.mu/...)' : 'ワールドURL (cluster.mu/w/...)';
+            document.getElementById('worldNameLabel').textContent = isEvent ? 'イベント名' : 'ワールド名';
+            document.getElementById('worldName').placeholder = isEvent ? '例: 〇〇フェスティバル' : '例: クラスターロビー';
+        }
+
+        function openAddWorldModal(type) {
+            type = type === 'event' ? 'event' : 'world';
+            document.getElementById('worldEditId').value = '';
+            document.getElementById('worldTypeInput').value = type;
+            document.getElementById('worldUrl').value = '';
+            document.getElementById('worldName').value = '';
+            document.getElementById('worldCreator').value = '';
+            document.getElementById('worldThumb').value = '';
+            document.getElementById('worldFolderSelect').value =
+                !VIRTUAL_FOLDER_IDS.includes(state.currentFolder) ? state.currentFolder : 'uncategorized';
+            updateWorldModalLabels(type);
+            resetFetchMetaStatus();
+            document.getElementById('worldModal').classList.add('active');
+        }
+
+        function openNewFolderModal() {
+            document.getElementById('folderModalTitle').textContent = '新しいフォルダを作成';
+            document.getElementById('folderEditId').value = '';
+            document.getElementById('folderNameInput').value = '';
+            document.getElementById('saveFolderBtn').textContent = '作成';
+            document.getElementById('folderModal').classList.add('active');
+        }
+
+        function openRenameFolderModal(folderId) {
+            const folder = state.folders.find(f => f.id === folderId);
+            if (!folder) return;
+            document.getElementById('folderModalTitle').textContent = 'フォルダ名を変更';
+            document.getElementById('folderEditId').value = folder.id;
+            document.getElementById('folderNameInput').value = folder.name;
+            document.getElementById('saveFolderBtn').textContent = '保存する';
+            document.getElementById('folderModal').classList.add('active');
+        }
+
+        function openImportModal() {
+            const fileInput = document.getElementById('backupFileInput');
+            if (fileInput) fileInput.value = '';
+            document.getElementById('importModal').classList.add('active');
+        }
+
+        function openAboutModal() {
+            document.getElementById('aboutModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            if (modalId === 'folderExportModal') {
+                resetFolderExportExtraMode();
+            }
+        }
+
+        function saveWorld(event) {
+            event.preventDefault();
+            const editId = document.getElementById('worldEditId').value;
+            const type = document.getElementById('worldTypeInput').value === 'event' ? 'event' : 'world';
+            const url = document.getElementById('worldUrl').value;
+            const name = document.getElementById('worldName').value;
+            const creator = document.getElementById('worldCreator').value;
+            const thumb = document.getElementById('worldThumb').value;
+            const folder = document.getElementById('worldFolderSelect').value;
+
+            if (!isSafeUrl(url) || !isSafeUrl(thumb)) {
+                showCustomDialog('エラー', 'URLはhttp://またはhttps://で始まる形式のみ入力できます。');
+                return;
+            }
+
+            if (editId) {
+                const world = state.worlds.find(w => String(w.id) === String(editId));
+                if (world) {
+                    world.url = url;
+                    world.name = name;
+                    world.creator = creator;
+                    world.thumb = thumb;
+                    world.folder = folder;
+                    world.type = type;
+                    if (state.currentDetailWorldId === world.id) {
+                        renderDetailContent(world);
+                    }
+                }
+                showToast(type === 'event' ? 'イベント情報を更新しました' : 'ワールド情報を更新しました');
+            } else {
+                const newWorld = {
+                    id: 'w_' + Date.now(),
+                    url,
+                    name,
+                    creator,
+                    thumb,
+                    folder: folder || 'uncategorized',
+                    type,
+                    memos: [],
+                    addedAt: new Date().toISOString()
+                };
+                state.worlds.unshift(newWorld);
+                showToast(type === 'event' ? 'イベントを追加しました' : 'ワールドを追加しました');
+            }
+
+            saveData();
+            renderFolders();
+            renderWorlds();
+            closeModal('worldModal');
+        }
+
+        function editWorld(id) {
+            const world = state.worlds.find(w => String(w.id) === String(id));
+            if (!world) return;
+
+            document.getElementById('worldEditId').value = world.id;
+            document.getElementById('worldTypeInput').value = world.type || 'world';
+            document.getElementById('worldUrl').value = world.url;
+            document.getElementById('worldName').value = world.name;
+            document.getElementById('worldCreator').value = world.creator || '';
+            document.getElementById('worldThumb').value = world.thumb || '';
+            document.getElementById('worldFolderSelect').value = world.folder;
+            updateWorldModalLabels(world.type || 'world');
+            resetFetchMetaStatus();
+            document.getElementById('worldModal').classList.add('active');
+        }
+
+        function deleteWorld(event, id) {
+            event.stopPropagation();
+            showCustomDialog('確認', 'このワールドをリストから削除しますか？', true, (confirmed) => {
+                if (confirmed) {
+                    state.worlds = state.worlds.filter(w => String(w.id) !== String(id));
+                    if (String(state.currentDetailWorldId) === String(id)) {
+                        backToHome();
+                    }
+                    saveData();
+                    renderFolders();
+                    renderWorlds();
+                    showToast('削除しました');
+                }
+            });
+        }
+
+        function saveFolder(event) {
+            event.preventDefault();
+            const name = document.getElementById('folderNameInput').value.trim();
+            if (!name) return;
+            const editId = document.getElementById('folderEditId').value;
+
+            if (editId) {
+                const folder = state.folders.find(f => f.id === editId);
+                if (folder) {
+                    folder.name = name;
+                    if (!saveData()) return;
+                    renderFolders();
+                    if (state.currentFolder === editId) {
+                        document.getElementById('currentFolderName').textContent = name;
+                    }
+                    if (state.currentDetailWorldId) {
+                        const w = state.worlds.find(w => String(w.id) === String(state.currentDetailWorldId));
+                        if (w) renderDetailContent(w);
+                    }
+                    showToast('フォルダ名を変更しました');
+                }
+            } else {
+                const id = 'f_' + Date.now();
+                state.folders.push({ id, name, icon: '📁' });
+                if (!saveData()) { state.folders.pop(); return; }
+                renderFolders();
+                selectFolder(id);
+                showToast('フォルダを作成しました');
+            }
+
+            closeModal('folderModal');
+        }
+
+        function requestDeleteFolder(folderId) {
+            const folder = state.folders.find(f => f.id === folderId);
+            if (!folder) return;
+            if (folderId === 'uncategorized') {
+                showCustomDialog('エラー', '「未分類」フォルダは削除できません。');
+                return;
+            }
+
+            const count = state.worlds.filter(w => w.folder === folderId).length;
+            const message = count > 0
+                ? `「${folder.name}」フォルダを削除しますか？\n含まれる${count}件のワールド・イベントは「未分類」に移動されます。`
+                : `「${folder.name}」フォルダを削除しますか？`;
+
+            showCustomDialog('確認', message, true, (confirmed) => {
+                if (!confirmed) return;
+                state.worlds.forEach(w => {
+                    if (w.folder === folderId) w.folder = 'uncategorized';
+                });
+                state.folders = state.folders.filter(f => f.id !== folderId);
+                if (!saveData()) return;
+                if (state.currentFolder === folderId) {
+                    selectFolder('all');
+                } else {
+                    renderFolders();
+                    renderWorlds();
+                }
+                showToast('フォルダを削除しました');
+            });
+        }
+
+        function importBackupFile() {
+            const fileInput = document.getElementById('backupFileInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                showCustomDialog('エラー', '読み込むバックアップファイルを選択してください。');
+                return;
+            }
+
+            showCustomDialog('確認', '選択したファイルからデータを復元します。\n現在のデータは上書きされますがよろしいですか？', true, (confirmed) => {
+                if (!confirmed) return;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const imported = JSON.parse(e.target.result);
+                        if (!imported.worlds || !imported.folders) {
+                            throw new Error('無効なバックアップファイル形式です。');
+                        }
+                        state = imported;
+                        if (!state.currentFolder) state.currentFolder = 'all';
+                        saveData();
+                        renderFolders();
+                        backToHome();
+                        closeModal('importModal');
+                        showToast('バックアップからデータを正常に復元しました！');
+                    } catch (err) {
+                        showCustomDialog('エラー', 'ファイルの読み込みに失敗しました: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `cluster_messenger_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast('バックアップデータをエクスポートしました');
+        }
+
+        function openFolderExportModal() {
+            const exportableFolders = state.folders.filter(f => !VIRTUAL_FOLDER_IDS.includes(f.id));
+            if (exportableFolders.length === 0) {
+                showCustomDialog('エラー', 'エクスポートできるフォルダがありません。先にフォルダを作成してください。');
+                return;
+            }
+            const selectEl = document.getElementById('folderExportSelect');
+            selectEl.innerHTML = '';
+            exportableFolders.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f.id;
+                opt.textContent = f.name;
+                selectEl.appendChild(opt);
+            });
+            resetFolderExportExtraMode();
+            document.getElementById('folderExportModal').classList.add('active');
+        }
+
+        let folderExportTapCount = 0;
+        let folderExportExtraMode = false;
+
+        function handleFolderExportGuideTap() {
+            folderExportTapCount++;
+            if (folderExportTapCount >= 3) {
+                folderExportExtraMode = !folderExportExtraMode;
+                folderExportTapCount = 0;
+                applyFolderExportModeUI();
+            }
+        }
+
+        function resetFolderExportExtraMode() {
+            folderExportTapCount = 0;
+            folderExportExtraMode = false;
+            applyFolderExportModeUI();
+        }
+
+        function applyFolderExportModeUI() {
+            const textEl = document.getElementById('folderExportGuideText');
+            const btnEl = document.getElementById('folderExportSubmitBtn');
+            if (!textEl || !btnEl) return;
+            if (folderExportExtraMode) {
+                textEl.innerHTML = '<span style="color: var(--danger); font-weight: 700;">Extra Export</span><br>このモードでのエクスポートはメモ情報を含みます。';
+                btnEl.style.backgroundColor = 'var(--danger)';
+                btnEl.style.borderColor = 'var(--danger)';
+            } else {
+                textEl.innerHTML = '選択したフォルダ内のワールド・イベント情報をJSONファイルに書き出します。<br>※メモは含まれません。';
+                btnEl.style.backgroundColor = '';
+                btnEl.style.borderColor = '';
+            }
+        }
+
+        function handleFolderExportSubmit() {
+            const folderId = document.getElementById('folderExportSelect').value;
+            exportFolderData(folderId, folderExportExtraMode);
+            closeModal('folderExportModal');
+        }
+
+        function exportFolderData(folderId, includeMemos) {
+            const folder = state.folders.find(f => f.id === folderId);
+            if (!folder) return;
+
+            const worlds = state.worlds
+                .filter(w => w.folder === folderId)
+                .map(w => {
+                    const base = {
+                        id: w.id,
+                        url: w.url,
+                        name: w.name,
+                        creator: w.creator,
+                        thumb: w.thumb,
+                        folder: w.folder,
+                        type: w.type || 'world',
+                        addedAt: w.addedAt
+                    };
+                    if (includeMemos) {
+                        base.memos = Array.isArray(w.memos) ? w.memos : [];
+                    }
+                    return base;
+                });
+
+            const payload = {
+                type: 'cluster_world_messenger_folder_export',
+                exportedAt: new Date().toISOString(),
+                includesMemos: !!includeMemos,
+                folder: { id: folder.id, name: folder.name, icon: folder.icon },
+                worlds
+            };
+
+            const safeName = String(folder.name).replace(/[^\w\-ぁ-んァ-ヶ一-龠々ー]/g, '_').slice(0, 30) || 'folder';
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `cluster_messenger_folder_${safeName}_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast(includeMemos ? 'フォルダをエクスポートしました（メモを含む）' : 'フォルダをエクスポートしました');
+        }
+
+        function openFolderImportModal() {
+            const fileInput = document.getElementById('folderImportFileInput');
+            if (fileInput) fileInput.value = '';
+            document.getElementById('folderImportModal').classList.add('active');
+        }
+
+        function getUniqueFolderName(baseName) {
+            const existingNames = state.folders.map(f => f.name);
+            if (!existingNames.includes(baseName)) return baseName;
+            let i = 1;
+            while (existingNames.includes(`${baseName}(${i})`)) i++;
+            return `${baseName}(${i})`;
+        }
+
+        function importFolderFile() {
+            const fileInput = document.getElementById('folderImportFileInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                showCustomDialog('エラー', '読み込むフォルダファイルを選択してください。');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (!imported.folder || !Array.isArray(imported.worlds)) {
+                        throw new Error('無効なフォルダファイル形式です。');
+                    }
+
+                    const importedFolder = imported.folder;
+                    const baseName = importedFolder.name || '無題のフォルダ';
+                    const uniqueName = getUniqueFolderName(baseName);
+                    const previewName = uniqueName !== baseName
+                        ? `「${baseName}」は既に存在するため「${uniqueName}」として`
+                        : `「${uniqueName}」フォルダとして`;
+
+                    showCustomDialog('確認', `${previewName}新しく追加します。\n他のデータはそのまま保持されます。よろしいですか？`, true, (confirmed) => {
+                        if (!confirmed) return;
+
+                        let newFolderId = 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+                        while (state.folders.some(f => f.id === newFolderId)) {
+                            newFolderId = 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+                        }
+                        const newFolder = {
+                            id: newFolderId,
+                            name: uniqueName,
+                            icon: importedFolder.icon || '📁'
+                        };
+                        state.folders.push(newFolder);
+
+                        imported.worlds.forEach(w => {
+                            state.worlds.push({
+                                id: 'w_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                                url: w.url,
+                                name: w.name,
+                                creator: w.creator,
+                                thumb: w.thumb,
+                                folder: newFolderId,
+                                type: w.type === 'event' ? 'event' : 'world',
+                                memos: Array.isArray(w.memos) ? w.memos : [],
+                                addedAt: w.addedAt || new Date().toISOString()
+                            });
+                        });
+
+                        if (!saveData()) return;
+                        renderFolders();
+                        renderWorlds();
+                        closeModal('folderImportModal');
+                        showToast('フォルダをインポートしました');
+                    });
+                } catch (err) {
+                    showCustomDialog('エラー', 'ファイルの読み込みに失敗しました: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function toggleTopActionsMenu(event) {
+            if (event) event.stopPropagation();
+            const menu = document.getElementById('topActionsMenu');
+            const btn = document.querySelector('.more-actions-btn');
+            const isActive = menu.classList.toggle('active');
+            if (btn) btn.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+        }
+
+        function toggleBackupMenu(event) {
+            if (event) event.stopPropagation();
+            const menu = document.getElementById('backupMenu');
+            const btn = document.querySelector('.backup-dropdown button');
+            const isActive = menu.classList.toggle('active');
+            if (btn) btn.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+        }
+
+        // 汎用ドロップダウン開閉（「登録する」「拡張機能」「フォルダのエクスポート・インポート」で使用）
+        function toggleDropdown(event, menuId) {
+            if (event) event.stopPropagation();
+            const menu = document.getElementById(menuId);
+            if (!menu) return;
+            const wasActive = menu.classList.contains('active');
+
+            document.querySelectorAll('.dropdown-menu.active').forEach(m => {
+                if (m !== menu) {
+                    m.classList.remove('active');
+                    const otherBtn = m.previousElementSibling;
+                    if (otherBtn && otherBtn.tagName === 'BUTTON') otherBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            menu.classList.toggle('active', !wasActive);
+            const btn = menu.previousElementSibling;
+            if (btn && btn.tagName === 'BUTTON') btn.setAttribute('aria-expanded', (!wasActive).toString());
+        }
+
+        document.addEventListener('click', (e) => {
+            const wrapper = document.getElementById('topActionsMobile');
+            const menu = document.getElementById('topActionsMenu');
+            if (menu && menu.classList.contains('active') && wrapper && !wrapper.contains(e.target)) {
+                menu.classList.remove('active');
+                const btn = document.querySelector('.more-actions-btn');
+                if (btn) btn.setAttribute('aria-expanded', 'false');
+            }
+
+            const backupWrapper = document.querySelector('.backup-dropdown');
+            const backupMenu = document.getElementById('backupMenu');
+            if (backupMenu && backupMenu.classList.contains('active') && backupWrapper && !backupWrapper.contains(e.target)) {
+                backupMenu.classList.remove('active');
+                const backupBtn = document.querySelector('.backup-dropdown button');
+                if (backupBtn) backupBtn.setAttribute('aria-expanded', 'false');
+            }
+
+            document.querySelectorAll('.dropdown-wrapper').forEach(dropWrapper => {
+                const menu = dropWrapper.querySelector('.dropdown-menu');
+                if (menu && menu.classList.contains('active') && !dropWrapper.contains(e.target)) {
+                    menu.classList.remove('active');
+                    const btn = menu.previousElementSibling;
+                    if (btn && btn.tagName === 'BUTTON') btn.setAttribute('aria-expanded', 'false');
+                }
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const menu = document.getElementById('topActionsMenu');
+                if (menu) menu.classList.remove('active');
+                const backupMenu = document.getElementById('backupMenu');
+                if (backupMenu) backupMenu.classList.remove('active');
+                document.querySelectorAll('.dropdown-menu.active').forEach(m => m.classList.remove('active'));
+            }
+        });
+
+        // ダイアログ（モーダル）は、ボックス外の背景（オーバーレイ）をタップすると閉じる
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target !== overlay) return;
+                if (overlay.id === 'customDialogModal') {
+                    closeCustomDialog(false);
+                } else {
+                    closeModal(overlay.id);
+                }
+            });
+        });
+
+        const mobileMediaQuery = window.matchMedia('(max-width: 768px)');
+
+        function relocateSearchBox(e) {
+            const searchBox = document.querySelector('.search-box');
+            const sidebarHeader = document.querySelector('.sidebar-header');
+            const topBar = document.querySelector('header.top-bar');
+            const topActionsMobile = document.getElementById('topActionsMobile');
+            if (!searchBox || !sidebarHeader || !topBar || !topActionsMobile) return;
+
+            const isMobile = e ? e.matches : mobileMediaQuery.matches;
+            if (isMobile) {
+                if (searchBox.parentElement !== sidebarHeader) {
+                    sidebarHeader.appendChild(searchBox);
+                }
+                if (topActionsMobile.parentElement !== sidebarHeader) {
+                    sidebarHeader.appendChild(topActionsMobile);
+                }
+            } else {
+                if (searchBox.parentElement !== topBar) {
+                    topBar.insertBefore(searchBox, topBar.firstChild);
+                }
+                if (topActionsMobile.parentElement !== topBar) {
+                    topBar.appendChild(topActionsMobile);
+                }
+            }
+        }
+
+        mobileMediaQuery.addEventListener('change', relocateSearchBox);
+
+        loadData();
+        renderFolders();
+        renderWorlds();
+        autoFetchDefaultLobbyThumbnail();
+        relocateSearchBox();
+    </script>
+</body>
+</html>
