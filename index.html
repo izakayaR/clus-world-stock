@@ -1652,6 +1652,11 @@
                         if (!w.type) w.type = 'world';
                         delete w.gallery;
                     });
+                    // 起動時は常に「全てのワールド」から表示する。
+                    // （前回開いていたフォルダが保存されていると、見出しは「全てのワールド」のまま
+                    //   中身だけ別フォルダで絞り込まれ「ワールドが見つかりません」になるため）
+                    state.currentFolder = 'all';
+                    state.currentDetailWorldId = null;
                 } catch(e) {
                     console.error('Failed to load saved state', e);
                 }
