@@ -1504,7 +1504,7 @@
                     <p>PC表示ではサイドバー下部の「拡張機能」、スマホ表示ではフォルダ一覧横の赤い丸ボタンから、「フォルダエクスポート」「フォルダインポート」を利用できます。エクスポートは選んだフォルダ内のワールド・イベント情報（メモは含みません）だけを書き出します。インポートすると常に新しいフォルダとして追加され、同名のフォルダが既にある場合は「フォルダ名(1)」のように自動で番号が付きます。</p>
                     <div class="about-subfeature">
                         <strong>👥 友達とお気に入りのワールドを共有しよう</strong>
-                        <p>「フォルダエクスポート」で書き出したJSONファイルを友達に送り、友達が「フォルダインポート」で読み込むだけで、あなたのお気に入りフォルダをそのまま友達の端末でも楽しんでもらえます。友人間でファイルをやり取りするだけでフォルダを共有できる、手軽な共有方法です。<br>※メモはエクスポートデータに含まれないため、共有されません。<br>🔗 ファイルを送らなくても、「フォルダエクスポート」画面の「URLで共有」でリンクをコピーして送るだけで共有できます（メモは含まれません）。リンクを開くと、フォルダを追加するか確認する画面が表示されます。</p>
+                        <p>🔗 サイドバーの各フォルダ名の横にあるリンクアイコンのボタンを押すだけで、そのフォルダの共有リンクをコピーできます。コピーしたリンクを友達に送り、友達がリンクを開くと、フォルダを追加するか確認する画面が表示されます。<br>🔗 「フォルダエクスポート」画面の「URLで共有」からも、同じように共有リンクをコピーできます。<br>📁 ファイルで共有する場合は、「フォルダエクスポート」で書き出したJSONファイルを友達に送り、友達が「フォルダインポート」で読み込むだけで、あなたのお気に入りフォルダをそのまま友達の端末でも楽しんでもらえます。<br>※どちらの方法でも、メモは共有されません。</p>
                     </div>
                 </div>
             </div>
@@ -1691,6 +1691,21 @@
                 return parsed.protocol === 'http:' || parsed.protocol === 'https:';
             } catch (e) {
                 return false;
+            }
+        }
+
+        // 登録URL（https://cluster.mu/w/xxxx）から「遊びに行く」用のURL（.../entry）を自動生成する。
+        // 登録データ自体は書き換えず、表示のたびに生成する。ワールド以外のURLでは null を返す。
+        function getEntryUrl(url) {
+            if (!url || !isSafeUrl(url)) return null;
+            try {
+                const parsed = new URL(url);
+                if (!/(^|\.)cluster\.mu$/i.test(parsed.hostname)) return null;
+                const m = parsed.pathname.match(/^\/w\/([^\/]+?)(?:\/entry)?\/?$/);
+                if (!m) return null;
+                return parsed.origin + '/w/' + m[1] + '/entry' + parsed.search;
+            } catch (e) {
+                return null;
             }
         }
 
@@ -2064,6 +2079,10 @@
                                 <a href="${escapeHtml(world.url)}" target="_blank" rel="noopener noreferrer" class="icon-btn" title="Clusterで開く">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                                 </a>
+                                ${getEntryUrl(world.url) ? `
+                                <a href="${escapeHtml(getEntryUrl(world.url))}" target="_blank" rel="noopener noreferrer" class="icon-btn" title="遊びに行く" aria-label="遊びに行く">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                </a>` : ''}
                                 <button type="button" class="icon-btn" onclick="editWorld('${world.id}')" title="編集">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 </button>
@@ -2138,6 +2157,9 @@
                             <a href="${escapeHtml(world.url)}" target="_blank" rel="noopener noreferrer" class="btn" style="padding: 8px 14px; font-size: 0.85rem;">
                                 🚀 Clusterで開く
                             </a>
+                            ${getEntryUrl(world.url) ? `<a href="${escapeHtml(getEntryUrl(world.url))}" target="_blank" rel="noopener noreferrer" class="btn" style="padding: 8px 14px; font-size: 0.85rem;">
+                                🎮 遊びに行く
+                            </a>` : ''}
                             <button class="btn btn-secondary" onclick="editWorld('${world.id}')" style="padding: 8px 14px; font-size: 0.85rem;">
                                 ✏️ 情報を編集
                             </button>
