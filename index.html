@@ -1504,7 +1504,7 @@
                     <p>PC表示ではサイドバー下部の「拡張機能」、スマホ表示ではフォルダ一覧横の赤い丸ボタンから、「フォルダエクスポート」「フォルダインポート」を利用できます。エクスポートは選んだフォルダ内のワールド・イベント情報（メモは含みません）だけを書き出します。インポートすると常に新しいフォルダとして追加され、同名のフォルダが既にある場合は「フォルダ名(1)」のように自動で番号が付きます。</p>
                     <div class="about-subfeature">
                         <strong>👥 友達とお気に入りのワールドを共有しよう</strong>
-                        <p>「フォルダエクスポート」で書き出したJSONファイルを友達に送り、友達が「フォルダインポート」で読み込むだけで、あなたのお気に入りフォルダをそのまま友達の端末でも楽しんでもらえます。友人間でファイルをやり取りするだけでフォルダを共有できる、手軽な共有方法です。<br>※メモはエクスポートデータに含まれないため、共有されません。</p>
+                        <p>「フォルダエクスポート」で書き出したJSONファイルを友達に送り、友達が「フォルダインポート」で読み込むだけで、あなたのお気に入りフォルダをそのまま友達の端末でも楽しんでもらえます。友人間でファイルをやり取りするだけでフォルダを共有できる、手軽な共有方法です。<br>※メモはエクスポートデータに含まれないため、共有されません。<br>🔗 ファイルを送らなくても、「フォルダエクスポート」画面の「URLで共有」でリンクをコピーして送るだけで共有できます（メモは含まれません）。リンクを開くと、フォルダを追加するか確認する画面が表示されます。</p>
                     </div>
                 </div>
             </div>
@@ -1530,8 +1530,10 @@
             <div class="guide-box" id="folderExportGuideBox" style="margin-bottom: 0; cursor: pointer; user-select: none;" onclick="handleFolderExportGuideTap()">
                 <span id="folderExportGuideText">選択したフォルダ内のワールド・イベント情報をJSONファイルに書き出します。<br>※メモは含まれません。</span>
             </div>
+            <p style="font-size: 12px; opacity: 0.75; margin: 10px 0 0;">🔗「URLで共有」は、ワールド・イベント情報だけ（メモは常に含まれません）を入れた共有リンクをコピーします。リンクを開いた人は、確認のうえ新しいフォルダとして追加できます。</p>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal('folderExportModal')">キャンセル</button>
+                <button type="button" class="btn btn-secondary" id="folderShareUrlBtn" onclick="handleFolderShareUrl()">🔗 URLで共有</button>
                 <button type="button" class="btn" id="folderExportSubmitBtn" onclick="handleFolderExportSubmit()">エクスポート</button>
             </div>
         </div>
@@ -1933,6 +1935,7 @@
                 }
 
                 const canManage = !VIRTUAL_FOLDER_IDS.includes(folder.id) && folder.id !== 'uncategorized';
+                const canShare = !VIRTUAL_FOLDER_IDS.includes(folder.id);
 
                 const div = document.createElement('div');
                 div.className = `folder-item ${state.currentFolder === folder.id ? 'active' : ''}`;
@@ -1944,6 +1947,10 @@
                     <div class="folder-info">
                         <span>${escapeHtml(folder.icon || '📁')}</span>
                         <span class="folder-name-text">${escapeHtml(folder.name)}</span>
+                        ${canShare ? `
+                        <button type="button" class="folder-action-btn folder-share-btn" title="URLで共有（メモは含まれません）" aria-label="フォルダをURLで共有">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        </button>` : ''}
                     </div>
                     <div class="folder-item-right">
                         ${canManage ? `
@@ -1956,8 +1963,11 @@
                         <span class="folder-count">${count}</span>
                     </div>
                 `;
+                if (canShare) {
+                    div.querySelector('.folder-share-btn').onclick = (e) => { e.stopPropagation(); handleFolderShareUrl(folder.id); };
+                }
                 if (canManage) {
-                    const renameBtn = div.querySelector('.folder-action-btn:not(.delete)');
+                    const renameBtn = div.querySelector('.folder-action-btn:not(.delete):not(.folder-share-btn)');
                     const deleteBtn = div.querySelector('.folder-action-btn.delete');
                     renameBtn.onclick = (e) => { e.stopPropagation(); openRenameFolderModal(folder.id); };
                     deleteBtn.onclick = (e) => { e.stopPropagation(); requestDeleteFolder(folder.id); };
@@ -2526,6 +2536,244 @@
             showToast(includeMemos ? 'フォルダをエクスポートしました（メモを含む）' : 'フォルダをエクスポートしました');
         }
 
+        // ===== フォルダの追加（ファイル／共有URL共通） =====
+        // allowMemos: ファイルからのインポートは従来どおりメモを引き継ぐ／共有URLからは常にメモなし
+        function promptAddImportedFolder(importedFolder, rawWorlds, allowMemos, onDone, onCancel) {
+            const baseName = (importedFolder && importedFolder.name) || '無題のフォルダ';
+            const uniqueName = getUniqueFolderName(baseName);
+            const previewName = uniqueName !== baseName
+                ? `「${baseName}」は既に存在するため「${uniqueName}」として`
+                : `「${uniqueName}」フォルダとして`;
+
+            showCustomDialog('確認', `${previewName}新しく追加します（ワールド・イベント ${rawWorlds.length}件）。\n他のデータはそのまま保持されます。よろしいですか？`, true, (confirmed) => {
+                if (!confirmed) {
+                    if (onCancel) onCancel();
+                    return;
+                }
+
+                let newFolderId = 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+                while (state.folders.some(f => f.id === newFolderId)) {
+                    newFolderId = 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+                }
+                state.folders.push({
+                    id: newFolderId,
+                    name: uniqueName,
+                    icon: importedFolder.icon || '📁'
+                });
+
+                rawWorlds.forEach(w => {
+                    state.worlds.push({
+                        id: 'w_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                        url: w.url,
+                        name: w.name,
+                        creator: w.creator,
+                        thumb: w.thumb,
+                        folder: newFolderId,
+                        type: w.type === 'event' ? 'event' : 'world',
+                        memos: allowMemos && Array.isArray(w.memos) ? w.memos : [],
+                        addedAt: w.addedAt || new Date().toISOString()
+                    });
+                });
+
+                if (!saveData()) return;
+                renderFolders();
+                renderWorlds();
+                if (onDone) onDone();
+                showToast('フォルダをインポートしました');
+            });
+        }
+
+        // ===== URLでのフォルダ共有（メモは一切含めない） =====
+        const SHARE_HASH_KEY = '#share=';
+        const SHARE_URL_SOFT_LIMIT = 8000;   // これを超えるとSNS等で途切れることがあるため、サムネイルを省く
+        const SHARE_MAX_WORLDS = 500;
+
+        function bytesToBase64Url(bytes) {
+            let bin = '';
+            for (let i = 0; i < bytes.length; i += 0x8000) {
+                bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+            }
+            return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        function base64UrlToBytes(str) {
+            let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+            while (b64.length % 4) b64 += '=';
+            const bin = atob(b64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return bytes;
+        }
+
+        async function streamTransform(bytes, transform) {
+            const stream = new Blob([bytes]).stream().pipeThrough(transform);
+            return new Uint8Array(await new Response(stream).arrayBuffer());
+        }
+
+        // 先頭1文字で形式を区別: z = 圧縮あり / r = 圧縮なし（古いブラウザ用）
+        async function encodeSharePayload(obj) {
+            const raw = new TextEncoder().encode(JSON.stringify(obj));
+            if (typeof CompressionStream === 'function') {
+                try {
+                    return 'z' + bytesToBase64Url(await streamTransform(raw, new CompressionStream('deflate-raw')));
+                } catch (e) {
+                    console.warn('Compression failed, falling back to raw', e);
+                }
+            }
+            return 'r' + bytesToBase64Url(raw);
+        }
+
+        async function decodeSharePayload(encoded) {
+            const kind = encoded.charAt(0);
+            const bytes = base64UrlToBytes(encoded.slice(1));
+            let raw;
+            if (kind === 'z') {
+                if (typeof DecompressionStream !== 'function') {
+                    throw new Error('このブラウザは共有URLの展開に対応していません。');
+                }
+                raw = await streamTransform(bytes, new DecompressionStream('deflate-raw'));
+            } else if (kind === 'r') {
+                raw = bytes;
+            } else {
+                throw new Error('無効な共有URLです。');
+            }
+            return JSON.parse(new TextDecoder().decode(raw));
+        }
+
+        async function buildFolderShareUrl(folder, worlds, withThumbs) {
+            const payload = {
+                v: 1,
+                n: folder.name,
+                i: folder.icon || '📁',
+                w: worlds.map(w => [
+                    w.url || '',
+                    w.name || '',
+                    w.creator || '',
+                    withThumbs && isSafeUrl(w.thumb) ? (w.thumb || '') : '',
+                    w.type === 'event' ? 'e' : 'w'
+                ])
+            };
+            const encoded = await encodeSharePayload(payload);
+            return location.href.split('#')[0] + SHARE_HASH_KEY + encoded;
+        }
+
+        async function copyTextToClipboard(text) {
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                }
+            } catch (e) { /* フォールバックへ */ }
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.setAttribute('readonly', '');
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                const ok = document.execCommand('copy');
+                ta.remove();
+                return ok;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function handleFolderShareUrl(folderIdArg) {
+            const folderId = typeof folderIdArg === 'string' ? folderIdArg : document.getElementById('folderExportSelect').value;
+            const folder = state.folders.find(f => f.id === folderId);
+            if (!folder) return;
+
+            if (location.protocol === 'file:') {
+                showCustomDialog('エラー', 'このページをファイルとして直接開いているため、共有URLを作成できません。Web上に公開したURLでページを開いてからお試しください。');
+                return;
+            }
+
+            const worlds = state.worlds.filter(w => w.folder === folderId && isSafeUrl(w.url));
+            if (worlds.length === 0) {
+                showCustomDialog('エラー', 'このフォルダにはワールド・イベントがないため、共有できません。');
+                return;
+            }
+            if (worlds.length > SHARE_MAX_WORLDS) {
+                showCustomDialog('エラー', `共有URLで送れるのは${SHARE_MAX_WORLDS}件までです。ファイルのエクスポートをご利用ください。`);
+                return;
+            }
+
+            try {
+                let url = await buildFolderShareUrl(folder, worlds, true);
+                let thumbsDropped = false;
+                if (url.length > SHARE_URL_SOFT_LIMIT) {
+                    url = await buildFolderShareUrl(folder, worlds, false);
+                    thumbsDropped = true;
+                }
+
+                const copied = await copyTextToClipboard(url);
+                closeModal('folderExportModal');
+
+                let note = '';
+                if (thumbsDropped) note += 'URLが長くなるため、サムネイル画像は含めていません。';
+                if (url.length > SHARE_URL_SOFT_LIMIT) note += 'それでもURLがかなり長いため、一部のアプリでは途切れる可能性があります。その場合はファイルのエクスポートをご利用ください。';
+
+                if (copied) {
+                    if (note) {
+                        showCustomDialog('共有URLをコピーしました', note + '\n（メモは含まれません）');
+                    } else {
+                        showToast('共有URLをコピーしました（メモは含まれません）');
+                    }
+                } else {
+                    showCustomDialog('共有URL', '自動コピーできませんでした。以下のURLを選択してコピーしてください。\n\n' + url + (note ? '\n\n' + note : ''));
+                }
+            } catch (err) {
+                console.error('Failed to build share URL', err);
+                showCustomDialog('エラー', '共有URLの作成に失敗しました: ' + err.message);
+            }
+        }
+
+        // 共有URL（#share=...）で開かれたときの処理。内容は信頼せず、検証・整形してから確認ダイアログを出す
+        function sanitizeSharedText(v, max) {
+            return typeof v === 'string' ? v.slice(0, max) : '';
+        }
+
+        async function handleSharedUrlOnLoad() {
+            if (!location.hash.startsWith(SHARE_HASH_KEY)) return;
+            const encoded = location.hash.slice(SHARE_HASH_KEY.length);
+            // 再読み込みで毎回ダイアログが出ないよう、先にハッシュを消す
+            history.replaceState(null, '', location.pathname + location.search);
+
+            try {
+                if (!encoded || encoded.length > 400000) throw new Error('無効な共有URLです。');
+                const data = await decodeSharePayload(encoded);
+                if (!data || data.v !== 1 || !Array.isArray(data.w)) throw new Error('無効な共有URLです。');
+
+                const worlds = [];
+                data.w.slice(0, SHARE_MAX_WORLDS).forEach(row => {
+                    if (!Array.isArray(row)) return;
+                    const url = sanitizeSharedText(row[0], 500);
+                    const thumb = sanitizeSharedText(row[3], 1500);
+                    if (!url || !isSafeUrl(url) || !isSafeUrl(thumb)) return;
+                    worlds.push({
+                        url,
+                        name: sanitizeSharedText(row[1], 200),
+                        creator: sanitizeSharedText(row[2], 200),
+                        thumb,
+                        type: row[4] === 'e' ? 'event' : 'world'
+                    });
+                });
+                if (worlds.length === 0) throw new Error('追加できるワールド・イベントがありません。');
+
+                const folderInfo = {
+                    name: sanitizeSharedText(data.n, 60).trim() || '共有されたフォルダ',
+                    icon: sanitizeSharedText(data.i, 8) || '📁'
+                };
+                // 共有URLからはメモを一切取り込まない
+                promptAddImportedFolder(folderInfo, worlds, false);
+            } catch (err) {
+                console.error('Failed to load shared folder', err);
+                showCustomDialog('エラー', '共有URLを読み込めませんでした。URLが途中で切れていないか確認してください。\n' + err.message);
+            }
+        }
+
         function openFolderImportModal() {
             const fileInput = document.getElementById('folderImportFileInput');
             if (fileInput) fileInput.value = '';
@@ -2556,47 +2804,7 @@
                         throw new Error('無効なフォルダファイル形式です。');
                     }
 
-                    const importedFolder = imported.folder;
-                    const baseName = importedFolder.name || '無題のフォルダ';
-                    const uniqueName = getUniqueFolderName(baseName);
-                    const previewName = uniqueName !== baseName
-                        ? `「${baseName}」は既に存在するため「${uniqueName}」として`
-                        : `「${uniqueName}」フォルダとして`;
-
-                    showCustomDialog('確認', `${previewName}新しく追加します。\n他のデータはそのまま保持されます。よろしいですか？`, true, (confirmed) => {
-                        if (!confirmed) return;
-
-                        let newFolderId = 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
-                        while (state.folders.some(f => f.id === newFolderId)) {
-                            newFolderId = 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
-                        }
-                        const newFolder = {
-                            id: newFolderId,
-                            name: uniqueName,
-                            icon: importedFolder.icon || '📁'
-                        };
-                        state.folders.push(newFolder);
-
-                        imported.worlds.forEach(w => {
-                            state.worlds.push({
-                                id: 'w_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-                                url: w.url,
-                                name: w.name,
-                                creator: w.creator,
-                                thumb: w.thumb,
-                                folder: newFolderId,
-                                type: w.type === 'event' ? 'event' : 'world',
-                                memos: Array.isArray(w.memos) ? w.memos : [],
-                                addedAt: w.addedAt || new Date().toISOString()
-                            });
-                        });
-
-                        if (!saveData()) return;
-                        renderFolders();
-                        renderWorlds();
-                        closeModal('folderImportModal');
-                        showToast('フォルダをインポートしました');
-                    });
+                    promptAddImportedFolder(imported.folder, imported.worlds, true, () => closeModal('folderImportModal'));
                 } catch (err) {
                     showCustomDialog('エラー', 'ファイルの読み込みに失敗しました: ' + err.message);
                 }
@@ -2727,6 +2935,7 @@
         renderWorlds();
         autoFetchDefaultLobbyThumbnail();
         relocateSearchBox();
+        handleSharedUrlOnLoad();
     </script>
 </body>
 </html>
